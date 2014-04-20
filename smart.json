@@ -1,5 +1,5 @@
 {
-  "name": "smartfile",
+  "name": "smartfile-api",
   "description": "Smartfile integration for meteor",
   "homepage": "https://github.com/Goluis/meteor-smartfile",
   "author": "Goluis - Luis Fernando",
