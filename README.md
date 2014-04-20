@@ -16,7 +16,7 @@ $ mrt add smartfile-api
 https://github.com/Goluis/meteor-smartfile-example
 
 ## Quick Start
-You must first create an account on smartfile ([here](https://app.smartfile.com/dev/signup/)), para
+You must first create an account on smartfile ([here](https://app.smartfile.com/dev/signup/))
 
 ## Configuration
 smartfile create a collection 'smartfile', its structure is:
