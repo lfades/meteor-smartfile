@@ -3,6 +3,6 @@
   "description": "Smartfile integration for meteor",
   "homepage": "https://github.com/Goluis/meteor-smartfile",
   "author": "Goluis - Luis Fernando",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "git": "https://github.com/Goluis/meteor-smartfile.git"
 }
