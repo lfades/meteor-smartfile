@@ -103,19 +103,22 @@ _.extend(SmartFileServer.prototype, {
 			throw makeSFError(e);
 		}
 	},
-	cleanSfCollection: function (userId, controller) {
-		if(this.collection) {
-			var unset = {};
+	cleanSfCollection: function (userId, controller, multiple) {
+		var operator = {};
+		if(multiple) {
+			operator['$pull'] = {};
+			operator['$pull'][controller] = multiple;
+		} else {
+			operator['$unset'] = {};
 			if(Array.isArray(controller)) {
 				_.each(controller, function (cont) {
-					unset[cont] = 1;
+					operator['$unset'][cont] = 1;
 				});
-			} else {
-				unset[controller] = 1;
-			}
-
-			this.collection.update({'user': userId}, {'$unset': unset});
+			} else
+				operator['$unset'][controller] = 1;
 		}
+		
+		this.collection.update({'user': userId}, operator);
 	},
 	save: function (data, options) {
 		options.path = options.path || "";
@@ -167,7 +170,7 @@ _.extend(SmartFileServer.prototype, {
 	validateController: function (controller, options, getFileNameId) {
 		if(!controller.ext)
 			throw new Meteor.Error(403, "You must specify the file extension");
-		
+
 		var ext = options.fileName.match(/[^\.^\s^\W]+$/)[0],
 			allowedSize = controller.size || 2000000; // 2mb
 			
@@ -181,26 +184,29 @@ _.extend(SmartFileServer.prototype, {
 
 		return fileNameId + '.' + ext;
 	},
-	createDoc: function (options, userId) {
+	createDoc: function (userFiles, options, multiple) {
 		var self = this,
-			files = this.collection.findOne({'user': userId});
+			operator = '$set';
 
-		if(files) {
-			var file = files[options.controller];
-			if(file) {
-				Meteor.defer(function() {
+		if(userFiles) {
+			var file = userFiles[options.controller];
+			if(_.isArray(file))
+				operator = '$push';
+			else if(file) {
+				Meteor.defer(function () {
 					self.rm(file.nameId);
 				});
 			}
 		}
 
-		var set = {'$set': {}},
-			opts = {'name': options.fileName, 'nameId': options.fileNameId};
+		var opts = {'name': options.fileName, 'nameId': options.fileNameId},
+			update = {},
+			firstFileInMultiple = operator == '$set' && typeof multiple != 'undefined';
 
-		set['$set'][options.controller] = opts;
+		update[operator] = {};
+		update[operator][options.controller] = firstFileInMultiple ? [opts]: opts;
 
-		this.collection.upsert({'user': userId}, set);
-
+		this.collection.upsert({'user': userFiles.user || userFiles}, update);
 		return opts;
 	}
 });
@@ -223,14 +229,23 @@ Meteor.methods({
 
 		if(controller.path)
 			options.path = controller.path;
-		
+
+		var userFiles = sfInstance.collection.findOne({'user': this.userId}),
+			multiple = controller.multiple;
+
+		if(multiple && userFiles) {
+			var files = userFiles[options.controller];
+			if(files && typeof multiple == 'number' && files.length === multiple)
+				throw new Meteor.Error(403, "You have reached the limit of files");
+		}
+
 		options.fileNameId = sfInstance.validateController(controller, options, sfInstance.config.fileNameId);
-		
+
 		try {
 			var result = sfInstance.onIncomingFile(new Buffer(data), options);
 			sfInstance.onUpload.call(this, result, options);
 			
-			return sfInstance.createDoc(options, this.userId);
+			return sfInstance.createDoc(userFiles || this.userId, options, multiple);
 		} catch (e) {
 			// Handle only SF related errors
 			if (e.statusCode) {

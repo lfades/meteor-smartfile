@@ -1,10 +1,15 @@
 function sfHelpers(sf) {
 	UI.registerHelper('sfData', function (controller) {
-		var file = sf.getFiles(controller);
-		if(file)
-			file.src = sf.resolvePublic(file.nameId);
+		var files = sf.getFiles(controller);
+
+		if(_.isArray(files)) {
+			_.each(files, function (file) {
+				file.src = sf.resolvePublic(file.nameId);
+			});
+		} else if(files)
+			files.src = sf.resolvePublic(files.nameId);
 		
-		return file;
+		return files;
 	});
 
 	UI.registerHelper('sfPath', function (nameId, other) {
