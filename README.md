@@ -53,6 +53,10 @@ use for read and write operations. If not specified, the root directory on Smart
 to upload a file to the client you must pass the controller
 ```js
 sf.fileControllers({
+	/* 
+		photo is a controller for single files, each time a new 
+		file is up with the same controller cleared the previous
+	*/
 	photo: {
 		ext: ['jpg', 'png'],
 		path: '', // optional, path of storage of the upload relative to basePath
@@ -60,6 +64,15 @@ sf.fileControllers({
 		allow: function (userId) { // optional, validate uploads to this controller
 			return true;
 		}
+	},
+	/*
+		likes is a controller for multiple files, you can store as many files 
+		as possible in the same driver and can be limited
+	*/
+	likes: {
+		ext: ['jpg', 'png'],
+		multiple: 3 // limit of 3 files
+		// multiple: true - no file limit
 	}
 });
 
