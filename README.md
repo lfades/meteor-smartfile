@@ -196,7 +196,9 @@ sf.onUploadFail = function (error, options) {
 // Works in server
 sf.getFiles();
 
-// delete files from the smartFile collection but not from smartfile
+// cleanSfCollection delete files from the smartFile collection but not from smartfile
+// You can pass the id of a file in the second parameter if the controller is a
+// multiple controller and remove from the controller only that file
 sf.cleanSfCollection('controller');
 
 // Creates the uploads/images directory if it does not exist, throws an error otherwise
