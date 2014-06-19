@@ -257,24 +257,27 @@ Meteor.methods({
 			}
 		}
 	},
-	'sm.remove': function (id, controller) {
+	'sm.remove': function (id, controller, nameId) {
 		var sfInstance = instancesById[id];
 		if(!sfInstance)
 			throw new Meteor.Error(400, "Unknown SmartFile instance id");
 
-		var files = sfInstance.collection.findOne({'user': this.userId})
-		if(files) {
-			var file = files[controller];
-			if(file) {
-				Meteor.defer(function() {
-					sfInstance.rm(file.nameId);
-				});
+		var userId = this.userId;
+		if(!userId)
+			throw new Meteor.Error(401, 'no user');
 
-				sfInstance.cleanSfCollection(this.userId, controller);
-			}
-		}else {
-			throw new Meteor.Error(400, "No smartfile document available");
-		}
+		var files = sfInstance.getFiles(controller);
+
+		if(files) {
+			sfInstance.cleanSfCollection(userId, controller, files.length && nameId ? {'nameId': nameId}: null);
+		
+			Meteor.defer(function () {
+				sfInstance.rm(files.nameId || nameId || _.map(files, function (file) {
+					return file.nameId;
+				}));
+			});
+		} else
+			throw new Meteor.Error(400, "No files to delete");
 	}
 });
 

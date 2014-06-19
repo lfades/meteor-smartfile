@@ -89,14 +89,19 @@ _.extend(SmartFileClient.prototype, {
 
 		fileReader.readAsArrayBuffer(file);
 	},
-	remove: function (controller, callback) {
+	remove: function (controller, nameId, callback) {
 		var userId = Meteor.userId();
+
+		if(typeof nameId == 'function') {
+			callback = nameId;
+			nameId = null;
+		}
 
 		if(!controller)
 			throw new Error("You must pass a controller");
 
 		if(userId && this.collection.findOne({'user': userId}))
-			Meteor.call('sm.remove', this.id, controller, callback);
+			Meteor.call('sm.remove', this.id, controller, nameId, callback);
 		else
 			throw new Error("No smartfile document available");
 	}
