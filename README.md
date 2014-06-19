@@ -122,6 +122,17 @@ Template.smartfile.events({
 				console.log("File uploaded, the path is:" + sf.resolvePublic(res.nameId));
 			});
 		}
+	},
+	'click #removeFile': function () {
+		sf.remove('controller', function (error) {
+			console.log(error.reason || 'file removed');
+		});
+	},
+	'click #removeFileMultiple': function () {
+		// the multiple can save many files, if you send the _id can give specific one to clear
+		sf.remove('controller', 'some id', function (error) {
+			console.log(error.reason || 'file removed');
+		});
 	}
 });
 ```
@@ -129,15 +140,25 @@ Template.smartfile.events({
 #### Helpers
 `fileId` is the `nameId` file, or rather, the name that is stored in SmartFile.
 ```html
-  <img src="{{ stPath 'fileId' }}" />
+  sfPath may receive a second parameter to set if file not found
+  <img src="{{ sfPath 'fileId' 'img/image.png' }}" />
   
-  {{#with sfData 'fileId' }}
+  {{#with sfData 'controller' }}
     <div>
 	  	<img src="{{ src }}"/>
 	  	name: {{ name }}
 	  	nameId: {{ nameId }}
-	  </div>
+    </div>
   {{/with}}
+  
+  sfData in multiple controller is an array I recommend you use in that case #each
+  {{#each sfData 'controller' }}
+	<div>
+	  	<img src="{{ src }}"/>
+	  	name: {{ name }}
+	  	nameId: {{ nameId }}
+	</div>
+  {{each}}
 ```
 
 ```js
