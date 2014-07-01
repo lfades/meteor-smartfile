@@ -29,6 +29,14 @@ function createFileNameId () {
 	return fileNameId;
 };
 
+function validParam (param) {
+	return param.indexOf('&') === -1;
+};
+
+function getControllerPath (options, path) {
+	return typeof path == 'function' ? path.call(options): path;
+};
+
 SmartFile = SmartFileServer;
 
 SmartFileServer.prototype = SmartFileBase.prototype;
@@ -49,10 +57,13 @@ _.extend(SmartFileServer.prototype, {
 
 		return key + ":" + password;
 	},
-	resolve: function (path) {
-		return this.config.basePath + "/" + path;
+	resolve: function (path, beforePath) {
+		var basePath = this.config.basePath + "/";
+		if(beforePath)
+			basePath += beforePath + "/";
+		return basePath + path;
 	},
-	mkdir: function (path) {
+	mkdir: function (path, share) {
 		var url = SF_API_URL + "/path/oper/mkdir/";
 
 		try {
@@ -60,7 +71,12 @@ _.extend(SmartFileServer.prototype, {
 				auth: this._getApiAuthString(),
 				data: {path: this.resolve(path)}
 			});
-			return result.data;
+
+			var data = result.data;
+			if(share)
+				data.share = _.omit(this.createShareLink(path, data.name), 'owner');
+
+			return data;
 		} catch (e) {
 			throw makeSFError(e);
 		}
@@ -76,20 +92,24 @@ _.extend(SmartFileServer.prototype, {
 			throw makeSFError(e);
 		}
 	},
-	rm: function (paths) {
-		var that = this;
+	rm: function (paths, filesPath) {
+		var self = this;
 
-		if (!Array.isArray(paths)) {
+		if(!Array.isArray(paths))
 			paths = [paths];
-		}
 
-		var content = paths.map(function(path){
-			return "path=" + encodeString(that.resolve(path));
+		var content = paths.map(function (path) {
+			if(path.nameId) {
+				if(path.shareId)
+					self.deleteShareLink(path.shareId);
+				path = path.nameId;
+			}
+			return "path=" + encodeString(self.resolve(path, filesPath));
 		}).join("&");
 		content = encodeContent(content);
 
 		var url = SF_API_URL + "/path/oper/remove/";
-
+		
 		try {
 			var result = HTTP.post(url, {
 				auth: this._getApiAuthString(),
@@ -100,6 +120,63 @@ _.extend(SmartFileServer.prototype, {
 			});
 			return result.data;
 		} catch (e){
+			throw makeSFError(e);
+		}
+	},
+	move: function (paths, dest) {
+		var self = this;
+
+		if(!Array.isArray(paths))
+			paths = [paths];
+
+		var content = paths.map(function (path) {
+			return "src=" + encodeString(self.resolve(path));
+		}).join("&");
+		content += '&dst=' + encodeString(self.resolve(dest));
+		
+		var url = SF_API_URL + "/path/oper/move/";
+		try {
+			var result = HTTP.post(url, {
+				auth: this._getApiAuthString(),
+				content: content,
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded"
+				}
+			});
+
+			return result.data;
+		} catch (e) {
+			throw makeSFError(e);
+		}
+	},
+	createShareLink: function (path, name) {
+		var url = SF_API_URL + "/link/",
+			content = 'path=/' + this.resolve(path) + '&list=true&read=true';
+
+		if(name && validParam(name))
+			content += '&name=' + name;
+
+		try {
+			var result = HTTP.post(url, {
+				auth: this._getApiAuthString(),
+				content: content,
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded"
+				}
+			});
+			return result.data;
+		} catch (e) {
+			throw makeSFError(e);
+		}
+	},
+	deleteShareLink: function (shareId) {
+		var url = SF_API_URL + '/link/' + shareId + '/';
+		try {
+			var result = HTTP.del(url, {
+				auth: this._getApiAuthString()
+			});
+			return result.data;
+		} catch (e) {
 			throw makeSFError(e);
 		}
 	},
@@ -121,15 +198,16 @@ _.extend(SmartFileServer.prototype, {
 		this.collection.update({'user': userId}, operator);
 	},
 	save: function (data, options) {
-		options.path = options.path || "";
-		options.fileName = options.fileName || "upload-" + Date.now();
+		var path = options.path || "",
+			fileName = options.fileName || "upload-" + Date.now(),
+			fileNameId = options.fileNameId;
 
 		var form = new FormData();
 		form.append("file", data, {
-			filename: options.fileNameId
+			filename: fileNameId
 		});
 
-		var uploadPath = SF_API_PATH + "/path/data/" + this.resolve(options.path);
+		var uploadPath = SF_API_PATH + "/path/data/" + this.resolve(path);
 
 		var f1 = new Future();
 		form.submit({
@@ -142,6 +220,12 @@ _.extend(SmartFileServer.prototype, {
 
 		var res = f1.get();
 
+		if(options.share) {
+			var sharePath = path ? path + '/' + fileNameId: fileNameId,
+				share = this.createShareLink(sharePath, fileName);
+			options.shareId = share.uid;
+		}
+
 		var f2 = new Future();
 		res.on("data", function(data) {
 			f2.return(JSON.parse(data));
@@ -150,10 +234,9 @@ _.extend(SmartFileServer.prototype, {
 
 		var resBody = f2.get();
 
-		if (res.statusCode !== 200) {
+		if(res.statusCode !== 200)
 			throw makeSFError({statusCode: res.statusCode, data: resBody});
-		}
-
+		
 		return resBody;
 	},
 	// Default Callbacks
@@ -194,14 +277,18 @@ _.extend(SmartFileServer.prototype, {
 				operator = '$push';
 			else if(file) {
 				Meteor.defer(function () {
-					self.rm(file.nameId);
+					self.rm(file.nameId, options.path);
 				});
 			}
 		}
 
 		var opts = {'name': options.fileName, 'nameId': options.fileNameId},
 			update = {},
-			firstFileInMultiple = operator == '$set' && typeof multiple != 'undefined';
+			firstFileInMultiple = operator == '$set' && typeof multiple != 'undefined',
+			shareId = options.shareId;
+
+		if(shareId)
+			opts.shareId = shareId;
 
 		update[operator] = {};
 		update[operator][options.controller] = firstFileInMultiple ? [opts]: opts;
@@ -217,20 +304,18 @@ Meteor.methods({
 		if(!sfInstance)
 			throw new Meteor.Error(400, "Unknown SmartFile instance id");
 
-		var allowed = sfInstance.allow.call(this, options),
+		var userId = this.userId,
+			allowed = sfInstance.allow.call(this, options),
 			controller = sfInstance.controllers[options.controller],
 			noControllerAllow = controller && controller.allow && !controller.allow.call(this, options);
 
-		if(!allowed || !this.userId || noControllerAllow)
+		if(!allowed || !userId || noControllerAllow)
 			throw new Meteor.Error(403, "Upload not allowed");
 
 		if(!controller)
 			throw new Meteor.Error(403, "Controller not registered");
 
-		if(controller.path)
-			options.path = controller.path;
-
-		var userFiles = sfInstance.collection.findOne({'user': this.userId}),
+		var userFiles = sfInstance.collection.findOne({'user': userId}),
 			multiple = controller.multiple;
 
 		if(multiple && userFiles) {
@@ -239,13 +324,17 @@ Meteor.methods({
 				throw new Meteor.Error(403, "You have reached the limit of files");
 		}
 
-		options.fileNameId = sfInstance.validateController(controller, options, sfInstance.config.fileNameId);
+		_.extend(options, {
+			fileNameId: sfInstance.validateController(controller, options, sfInstance.config.fileNameId),
+			share: controller.share == false ? false: true,
+			path: getControllerPath(this, controller.path)
+		});
 
 		try {
 			var result = sfInstance.onIncomingFile(new Buffer(data), options);
 			sfInstance.onUpload.call(this, result, options);
-			
-			return sfInstance.createDoc(userFiles || this.userId, options, multiple);
+
+			return sfInstance.createDoc(userFiles || userId, options, multiple);
 		} catch (e) {
 			// Handle only SF related errors
 			if (e.statusCode) {
@@ -260,24 +349,27 @@ Meteor.methods({
 	'sm.remove': function (id, controller, nameId) {
 		var sfInstance = instancesById[id];
 		if(!sfInstance)
-			throw new Meteor.Error(400, "Unknown SmartFile instance id");
-
+			throw new Meteor.Error(400, 'Unknown SmartFile instance id');
+		
 		var userId = this.userId;
 		if(!userId)
 			throw new Meteor.Error(401, 'no user');
 
-		var files = sfInstance.getFiles(controller);
+		var files = sfInstance.getFiles(controller, nameId),
+			sfController = sfInstance.controllers[controller];
 
-		if(files) {
-			sfInstance.cleanSfCollection(userId, controller, files.length && nameId ? {'nameId': nameId}: null);
+		if(sfController)
+			var filesPath = getControllerPath(this, sfController.path);
+		else
+			throw new Meteor.Error(402, 'that controller is not registered');
 		
+		if(files) {
+			sfInstance.cleanSfCollection(userId, controller, nameId ? {'nameId': nameId}: null);
 			Meteor.defer(function () {
-				sfInstance.rm(files.nameId || nameId || _.map(files, function (file) {
-					return file.nameId;
-				}));
+				sfInstance.rm(files, filesPath);
 			});
 		} else
-			throw new Meteor.Error(400, "No files to delete");
+			throw new Meteor.Error(400, 'No files to delete');
 	}
 });
 

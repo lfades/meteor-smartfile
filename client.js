@@ -1,25 +1,43 @@
-function sfHelpers(sf) {
-	UI.registerHelper('sfData', function (controller) {
+function getShareId (shareId) {
+	var instance = UI._templateInstance;
+
+	if(instance && !_.isString(shareId)) {
+		try {
+			var data = instance().data;
+			if(data && data.shareId)
+				shareId = data.shareId;
+		} catch (e) {
+			return null;
+		}
+	}
+
+	return _.isString(shareId) ? shareId: null;
+};
+
+function sfHelpers (sf) {
+	UI.registerHelper('sfData', function (controller, shareId) {
 		var files = sf.getFiles(controller);
 
 		if(_.isArray(files)) {
 			_.each(files, function (file) {
-				file.src = sf.resolvePublic(file.nameId);
+				file.src = sf.link(file, shareId);
 			});
 		} else if(files)
-			files.src = sf.resolvePublic(files.nameId);
+			files.src = sf.link(files, shareId);
 		
 		return files;
 	});
 
-	UI.registerHelper('sfPath', function (nameId, other) {
-		if(nameId)
-			return sf.resolvePublic(nameId);
-		return other;
+	UI.registerHelper('sfPath', function (file, shareId) {
+		if(file)
+			return sf.link(file, shareId);
 	});
 };
 
 function SmartFileClient (params) {
+	if(!params)
+		params = {};
+
 	this.id = params.id || SmartFileBase.defaultId;
 	this.config = {};
 	this.configure(params);
@@ -36,8 +54,10 @@ _.extend(SmartFileClient.prototype, {
 		this.config.publicRootUrl = params.publicRootUrl;
 	},
 	resolvePublic: function (path) {
-		if(!this.config.publicRootUrl)
-			throw new Error("No publicRootUrl configured");
+		if(!this.config.publicRootUrl) {
+			console.log('No publicRootUrl configured, configure it or send a shareId with the file [', path, ']');
+			return '';
+		}
 
 		return this.config.publicRootUrl + "/" + path;
 	},
@@ -104,5 +124,16 @@ _.extend(SmartFileClient.prototype, {
 			Meteor.call('sm.remove', this.id, controller, nameId, callback);
 		else
 			throw new Error("No smartfile document available");
+	},
+	link: function (file, shareId) {
+		if(file) {
+			var nameId = file.nameId || file;
+			shareId = file.shareId || getShareId(shareId);
+
+			if(shareId)
+				return 'https://file.ac/' + shareId + '/' + nameId;
+			else
+				return this.resolvePublic(nameId);
+		}
 	}
 });
