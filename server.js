@@ -277,7 +277,7 @@ _.extend(SmartFileServer.prototype, {
 				operator = '$push';
 			else if(file) {
 				Meteor.defer(function () {
-					self.rm(file.nameId, options.path);
+					self.rm(file, options.path);
 				});
 			}
 		}
@@ -293,6 +293,7 @@ _.extend(SmartFileServer.prototype, {
 		update[operator] = {};
 		update[operator][options.controller] = firstFileInMultiple ? [opts]: opts;
 
+		// userFiles can be only an object or just a string with the userId
 		this.collection.upsert({'user': userFiles.user || userFiles}, update);
 		return opts;
 	}
