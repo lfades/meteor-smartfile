@@ -128,11 +128,13 @@ Template.smartfile.events({
 			});
 
 			sf.upload(file, 'photo', function (error, res) {
+				// res has: { nameId: 'XXXXXX.jpg', name: 'some.jpg', shareId: 'XXXXXXX' }
+				// shareId only if the controller allows
 				if(error) {
 					console.log("error uploading the file", error);
 					return;
 				}
-				console.log("File uploaded, the path is:" + sf.resolvePublic(res.nameId));
+				console.log("File uploaded, the path is:" + sf.link(res));
 			});
 		}
 	},
@@ -247,7 +249,8 @@ sf.getFiles();
 sf.cleanSfCollection(userId, controller, nameId);
 
 // Creates the uploads/images directory if it does not exist, throws an error otherwise
-// share is true or false, default is true, creates a shareId for the created folder
+// share is true or false, default is false, creates a shareId for the created folder
+// share data is within result.share, the share path or shareId is result.share.uid
 sf.mkdir("uploads/images", share);
 
 // Lists the files within the uploads directory
@@ -260,6 +263,7 @@ sf.rm(path, otherBasePath)
 sf.rm("secret.txt") // /basePath/secret.txt
 sf.rm("uploads/secret.txt"); // /basePath/uploads/secret.txt
 sf.rm("uploads/secret.txt", 'myUser'); // /basePath/myUser/uploads/secret.txt
+sf.rm({nameId: "secret.txt", shareId: "XXXXX"}, 'myUser'); // also eliminates the share
 
 // move a file to another path, you can send an array of files
 sf.move("uploads/secret.txt", "anotherPath/here");
