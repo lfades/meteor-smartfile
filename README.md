@@ -8,7 +8,7 @@ https://github.com/sylvaingi/meteor-smartfile
 ## Installation
 
 ```sh
-$ mrt add smartfile-api
+$ mrt add cottz:smartfile
 ```
 
 ## Example
