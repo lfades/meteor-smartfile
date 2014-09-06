@@ -2,7 +2,7 @@ SmartFileBase = function () {};
 
 SmartFileBase.defaultId = "__default";
 
-SmartFileBase.prototype.collection = new Meteor.Collection('smartFile');
+SmartFileBase.prototype.collection = new Mongo.Collection('smartFile');
 
 SmartFileBase.prototype.getFiles = function (controller, nameId, userId) {
 	var userId = userId || Meteor.userId();

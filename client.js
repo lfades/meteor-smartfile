@@ -1,5 +1,5 @@
 function getShareId (shareId) {
-	var instance = UI._templateInstance;
+	var instance = Template.instance;
 
 	if(instance && !_.isString(shareId)) {
 		try {
@@ -15,7 +15,7 @@ function getShareId (shareId) {
 };
 
 function sfHelpers (sf) {
-	UI.registerHelper('sfData', function (controller, shareId) {
+	Blaze.registerHelper('sfData', function (controller, shareId) {
 		var files = sf.getFiles(controller);
 
 		if(_.isArray(files)) {
@@ -28,7 +28,7 @@ function sfHelpers (sf) {
 		return files;
 	});
 
-	UI.registerHelper('sfPath', function (file, shareId) {
+	Blaze.registerHelper('sfPath', function (file, shareId) {
 		if(file)
 			return sf.link(file, shareId);
 	});

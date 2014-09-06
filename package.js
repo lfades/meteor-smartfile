@@ -1,21 +1,22 @@
 Package.describe({
-  summary: 'SmartFile.com for Meteor'
+  summary: 'Smartfile integration for meteor',
+  version: '0.2.2',
+  git: 'https://github.com/Goluis/meteor-smartfile.git'
 });
 
-Package.on_use(function (api) {
-  api.use([
-    'meteor',
-    'livedata',
-    'http',
-    'underscore'
-  ], ['client', 'server']);
-  api.use('ui', 'client');
+Package.onUse(function (api) {
+  api.versionsFrom('METEOR@0.9.1');
+
+  api.use('mongo', ['client', 'server']);
+  api.use('underscore', ['client', 'server']);
+  api.use('blaze', 'client');
+  api.use('http', 'server');
 
   Npm.depends({'form-data': '0.1.2'});
 
-  api.add_files('common.js', ['server', 'client']);
-  api.add_files('client.js', 'client');
-  api.add_files('server.js', 'server');
+  api.addFiles('common.js', ['server', 'client']);
+  api.addFiles('client.js', 'client');
+  api.addFiles('server.js', 'server');
 
   api.export('SmartFile', ['client', 'server']);
 });
