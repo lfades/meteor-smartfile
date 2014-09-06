@@ -8,7 +8,7 @@ https://github.com/sylvaingi/meteor-smartfile
 ## Installation
 
 ```sh
-$ mrt add cottz:smartfile
+$ meteor add cottz:smartfile
 ```
 
 ## Example
