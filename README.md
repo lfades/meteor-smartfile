@@ -244,7 +244,7 @@ all paths are relative to `basePath`
 sf.getFiles();
 
 // cleanSfCollection delete files from the smartFile collection but not from smartfile
-// You can pass the id of a file in the second parameter if the controller is a
+// You can pass the id of a file in the third parameter if the controller is a
 // multiple controller and remove from the controller only that file
 sf.cleanSfCollection(userId, controller, nameId);
 
