@@ -1,6 +1,6 @@
 Package.describe({
   summary: 'Smartfile integration for meteor',
-  version: '0.2.3',
+  version: '0.2.5',
   git: 'https://github.com/Goluis/meteor-smartfile.git'
 });
 

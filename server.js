@@ -180,23 +180,6 @@ _.extend(SmartFileServer.prototype, {
 			throw makeSFError(e);
 		}
 	},
-	cleanSfCollection: function (userId, controller, multiple) {
-		var operator = {};
-		if(multiple) {
-			operator['$pull'] = {};
-			operator['$pull'][controller] = multiple;
-		} else {
-			operator['$unset'] = {};
-			if(Array.isArray(controller)) {
-				_.each(controller, function (cont) {
-					operator['$unset'][cont] = 1;
-				});
-			} else
-				operator['$unset'][controller] = 1;
-		}
-		
-		this.collection.update({'user': userId}, operator);
-	},
 	save: function (data, options) {
 		var path = options.path || "",
 			fileName = options.fileName || "upload-" + Date.now(),
