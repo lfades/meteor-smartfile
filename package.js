@@ -12,7 +12,7 @@ Package.onUse(function (api) {
   api.use('mongo');
   api.use('http', 'server');
   
-  api.use('meteorhacks:async');
+  api.use('meteorhacks:async@1.0.0');
 
   Npm.depends({
     'form-data': '0.1.2',
