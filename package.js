@@ -1,8 +1,8 @@
 Package.describe({
   name: 'cottz:smartfile',
-  version: '0.2.5',
+  version: '0.3.0',
   summary: 'Smartfile integration for meteor',
-  git: 'https://github.com/Goluis/meteor-smartfile.git',
+  git: 'https://github.com/Goluis/meteor-smartfile',
   documentation: 'README.md'
 });
 
