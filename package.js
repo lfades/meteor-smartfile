@@ -1,22 +1,36 @@
 Package.describe({
-  summary: 'Smartfile integration for meteor',
+  name: 'cottz:smartfile',
   version: '0.2.5',
-  git: 'https://github.com/Goluis/meteor-smartfile.git'
+  summary: 'Smartfile integration for meteor',
+  git: 'https://github.com/Goluis/meteor-smartfile.git',
+  documentation: 'README.md'
 });
 
 Package.onUse(function (api) {
-  api.versionsFrom('METEOR@0.9.1');
+  api.versionsFrom('1.0.3.2');
 
-  api.use('mongo', ['client', 'server']);
-  api.use('underscore', ['client', 'server']);
-  api.use('blaze', 'client');
+  api.use('mongo');
   api.use('http', 'server');
+  
+  api.use('meteorhacks:async');
 
-  Npm.depends({'form-data': '0.1.2'});
+  Npm.depends({
+    'form-data': '0.1.2',
+    'gm': '1.17.0'
+  });
 
-  api.addFiles('common.js', ['server', 'client']);
-  api.addFiles('client.js', 'client');
-  api.addFiles('server.js', 'server');
+  api.addFiles('lib/global_client.js', 'client');
+  api.addFiles('lib/global_server.js', 'server');
+  api.addFiles('lib/client.js', 'client');
+  api.addFiles('lib/helpers.js');
+  api.addFiles([
+    'lib/config.js',
+    'lib/utils.js',
+    'lib/controllers.js',
+    'lib/smartfile.js',
+    'lib/collection.js',
+    'lib/methods.js'
+  ], 'server');
 
   api.export('SmartFile', ['client', 'server']);
 });

@@ -18,6 +18,23 @@
           "version": "0.2.10"
         }
       }
+    },
+    "gm": {
+      "version": "1.17.0",
+      "dependencies": {
+        "debug": {
+          "version": "0.7.0"
+        },
+        "array-series": {
+          "version": "0.1.5"
+        },
+        "array-parallel": {
+          "version": "0.1.3"
+        },
+        "through": {
+          "version": "2.3.6"
+        }
+      }
     }
   }
 }
